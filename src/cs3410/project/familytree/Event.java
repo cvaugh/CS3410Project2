@@ -1,8 +1,6 @@
 package cs3410.project.familytree;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -15,11 +13,8 @@ public class Event extends TreeElement implements Comparator<Event> {
     public void write() throws IOException {
         if(writeLock) return;
         lock();
-        File parent = new File(Main.loadedTree.directory, "event");
-        if(!parent.exists()) parent.mkdir();
-        File file = new File(parent, id.toString() + ".txt");
-        String out = String.format("description=%s\ndate=%s\n", description, DATE_FORMAT.format(date));
-        Files.write(file.toPath(), out.getBytes());
+        Main.loadedTree.toWrite.put("event/" + id.toString() + ".txt",
+                String.format("description=%s\ndate=%s\n", description, DATE_FORMAT.format(date)));
     }
 
     @Override
