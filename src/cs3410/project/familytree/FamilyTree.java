@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -30,6 +32,21 @@ public class FamilyTree {
 
     public void read() throws IOException {
         // TODO
+    }
+
+    public Set<Person> getPeople() {
+        Set<Person> set = new HashSet<>();
+        addRecursive(root, set);
+        return set;
+    }
+
+    private static void addRecursive(Person p, Set<Person> set) {
+        if(p == null || set.contains(p)) return;
+        set.add(p);
+        for(Relationship r : p.relationships) {
+            addRecursive(r.a, set);
+            addRecursive(r.b, set);
+        }
     }
 
     public void unlockAll() {

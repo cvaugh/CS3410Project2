@@ -4,13 +4,12 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
-import javax.swing.border.BevelBorder;
 
 import cs3410.project.familytree.Person;
 
@@ -25,14 +24,13 @@ public class PersonEditorPanel extends JPanel {
     private final JButton addEvent = new JButton("Add Event");
     private final JButton delete = new JButton("Delete");
 
-    public PersonEditorPanel() {
+    public PersonEditorPanel(Person person) {
         super();
         setLayout(layout);
         setPreferredSize(new Dimension(450, 200));
-        setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
         id.setPreferredSize(new Dimension(400, 10));
         id.setForeground(Color.GRAY);
-        // id.setFont(id.getFont().deriveFont(9.0f));
         id.setFont(new Font("Courier New", Font.PLAIN, 9));
         layout.putConstraint(SpringLayout.WEST, id, 5, SpringLayout.WEST, this);
         layout.putConstraint(SpringLayout.NORTH, id, 5, SpringLayout.NORTH, this);
@@ -77,12 +75,18 @@ public class PersonEditorPanel extends JPanel {
         layout.putConstraint(SpringLayout.NORTH, suffix, 10, SpringLayout.SOUTH, title);
         add(suffix);
 
+        JSeparator bottomSeparator = new JSeparator(JSeparator.HORIZONTAL);
+        bottomSeparator.setPreferredSize(new Dimension(450, 10));
+        layout.putConstraint(SpringLayout.WEST, bottomSeparator, 0, SpringLayout.WEST, this);
+        layout.putConstraint(SpringLayout.SOUTH, bottomSeparator, -5, SpringLayout.SOUTH, this);
+        add(bottomSeparator);
+
         addRelationship.setPreferredSize(new Dimension(130, 30));
         addRelationship.addActionListener(e -> {
             // TODO
         });
         layout.putConstraint(SpringLayout.WEST, addRelationship, 5, SpringLayout.WEST, this);
-        layout.putConstraint(SpringLayout.SOUTH, addRelationship, -5, SpringLayout.SOUTH, this);
+        layout.putConstraint(SpringLayout.SOUTH, addRelationship, -5, SpringLayout.NORTH, bottomSeparator);
         add(addRelationship);
 
         addEvent.setPreferredSize(new Dimension(130, 30));
@@ -90,7 +94,7 @@ public class PersonEditorPanel extends JPanel {
             // TODO
         });
         layout.putConstraint(SpringLayout.WEST, addEvent, 5, SpringLayout.EAST, addRelationship);
-        layout.putConstraint(SpringLayout.SOUTH, addEvent, -5, SpringLayout.SOUTH, this);
+        layout.putConstraint(SpringLayout.SOUTH, addEvent, -5, SpringLayout.NORTH, bottomSeparator);
         add(addEvent);
 
         delete.setPreferredSize(new Dimension(130, 30));
@@ -98,8 +102,16 @@ public class PersonEditorPanel extends JPanel {
             // TODO
         });
         layout.putConstraint(SpringLayout.WEST, delete, 5, SpringLayout.EAST, addEvent);
-        layout.putConstraint(SpringLayout.SOUTH, delete, -5, SpringLayout.SOUTH, this);
+        layout.putConstraint(SpringLayout.SOUTH, delete, -5, SpringLayout.NORTH, bottomSeparator);
         add(delete);
+
+        if(person != null) {
+            update(person);
+        }
+    }
+
+    public PersonEditorPanel() {
+        this(null);
     }
 
     private void update(Person person) {

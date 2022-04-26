@@ -8,8 +8,12 @@ public abstract class TreeElement {
     public String description;
     public boolean writeLock;
 
+    public TreeElement() {
+        this.id = UUID.randomUUID();
+    }
+
     public abstract void write() throws IOException;
-    
+
     public void lock() {
         writeLock = true;
         Main.loadedTree.writeLocked.push(this);
