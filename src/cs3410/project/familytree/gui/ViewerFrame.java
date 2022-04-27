@@ -9,6 +9,7 @@ import java.awt.event.WindowEvent;
 import java.io.IOException;
 
 import javax.swing.BoxLayout;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -20,10 +21,10 @@ import cs3410.project.familytree.Main;
 import cs3410.project.familytree.Person;
 
 public class ViewerFrame extends JFrame {
-    private final JPanel leftContainer = new JPanel();
-    private final JScrollPane leftScrollPane = new JScrollPane(leftContainer);
-    private final JPanel rightContainer = new JPanel();
-    private final JScrollPane rightScrollPane = new JScrollPane(rightContainer);
+    private final JPanel topContainer = new JPanel();
+    private final JScrollPane topScrollPane = new JScrollPane(topContainer);
+    private final JPanel graph = new JPanel();
+    private final JScrollPane bottomScrollPane = new JScrollPane(graph);
 
     public ViewerFrame() {
         setTitle("Family Tree");
@@ -46,11 +47,12 @@ public class ViewerFrame extends JFrame {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                // TODO
+                topContainer.revalidate();
+                graph.revalidate();
+                graph.repaint();
             }
         });
-        // TODO custom layout manager
-        setLayout(new BoxLayout(getContentPane(), BoxLayout.X_AXIS));
+        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
         getContentPane().setPreferredSize(new Dimension(1000, 800));
         addMenu();
         addComponents();
@@ -94,33 +96,42 @@ public class ViewerFrame extends JFrame {
         menuItem = new JMenuItem("Select Person");
         menuItem.setMnemonic(KeyEvent.VK_E);
         menuItem.addActionListener(e -> {
-            // TODO
+            JDialog modal = new PersonSelectDialog() {
+                @Override
+                public void onClose(Person clicked) {
+                    setActivePerson(clicked);
+                }
+            };
+
+            modal.setVisible(true);
         });
         treeMenu.add(menuItem);
         menuBar.add(treeMenu);
+        JMenu toolsMenu = new JMenu("Tools");
+        // TODO tools menu
+        menuBar.add(toolsMenu);
         setJMenuBar(menuBar);
     }
 
     private void addComponents() {
-        // FIXME swing hangs due to the following line
-        leftContainer.setLayout(new BoxLayout(leftContainer, BoxLayout.Y_AXIS));
-        leftScrollPane.setViewportView(leftContainer);
-        leftScrollPane.setPreferredSize(new Dimension(500, 800));
-        leftScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        leftScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        add(leftScrollPane);
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
+        topScrollPane.setViewportView(topContainer);
+        topScrollPane.setPreferredSize(new Dimension(1000, 300));
+        topScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        topScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        add(topScrollPane);
 
-        rightScrollPane.add(rightContainer);
-        rightScrollPane.setViewportView(rightContainer);
-        rightScrollPane.setPreferredSize(new Dimension(500, 800));
-        rightScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-        rightScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        add(rightScrollPane);
+        bottomScrollPane.add(graph);
+        bottomScrollPane.setViewportView(graph);
+        bottomScrollPane.setPreferredSize(new Dimension(1000, 500));
+        bottomScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+        bottomScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        add(bottomScrollPane);
     }
 
     private void setActivePerson(Person p) {
         PersonEditorPanel pep = new PersonEditorPanel(p);
-        leftContainer.add(pep);
-        leftContainer.revalidate();
+        topContainer.add(pep);
+        topContainer.revalidate();
     }
 }

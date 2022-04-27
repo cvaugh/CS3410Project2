@@ -3,6 +3,8 @@ package cs3410.project.familytree;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -12,10 +14,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class FamilyTree {
+    public static final DateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy");
     // XXX hardcoded file for testing
     public File file = new File("test.tree");
     public Person root;
-    public Stack<TreeElement> writeLocked = new Stack<>();
+    public Stack<Person> writeLocked = new Stack<>();
     public Map<String, String> toWrite = new HashMap<>();
 
     public void write() throws IOException {
@@ -40,12 +43,20 @@ public class FamilyTree {
         return set;
     }
 
-    private static void addRecursive(Person p, Set<Person> set) {
-        if(p == null || set.contains(p)) return;
-        set.add(p);
-        for(Relationship r : p.relationships) {
-            addRecursive(r.a, set);
-            addRecursive(r.b, set);
+    public int getSize() {
+        return getPeople().size();
+    }
+
+    private static void addRecursive(Person person, Set<Person> set) {
+        if(person == null || set.contains(person)) return;
+        set.add(person);
+        addRecursive(person.mother, set);
+        addRecursive(person.father, set);
+        for(Person p : person.spouses) {
+            addRecursive(p, set);
+        }
+        for(Person p : person.children) {
+            addRecursive(p, set);
         }
     }
 
