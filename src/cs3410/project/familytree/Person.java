@@ -10,6 +10,7 @@ import java.util.UUID;
 public class Person implements Comparator<Person> {
     public UUID id;
     public boolean writeLock = false;
+    public boolean drawLock = false;
     public String description = "";
     public String givenName = "";
     public String familyName = "";
@@ -19,33 +20,47 @@ public class Person implements Comparator<Person> {
     public Date deathDate;
     public Person mother;
     public Person father;
-    public Set<Person> spouses = new HashSet<>();
     public Set<Person> children = new HashSet<>();
 
     public Person() {
         id = UUID.randomUUID();
+        Main.loadedTree.orphans.add(this);
     }
 
     public void write() throws IOException {
         if(writeLock) return;
-        lock();
+        writeLock();
         // TODO write full metadata
         Main.loadedTree.toWrite.put(id.toString() + ".person",
                 String.format("description=%s\ngivenName=%s\nfamilyName=%s\ntitle=%s\nsuffix=%s\n", description,
                         givenName, familyName, title, suffix));
-        mother.write();
-        father.write();
-        for(Person p : spouses) {
-            p.write();
-        }
+        if(mother != null) mother.write();
+        if(father != null) father.write();
         for(Person p : children) {
             p.write();
         }
     }
 
-    private void lock() {
+    public void setMother(Person p) {
+        this.mother = p;
+        p.children.add(this);
+        Main.loadedTree.orphans.remove(this);
+    }
+
+    public void setFather(Person p) {
+        this.father = p;
+        p.children.add(this);
+        Main.loadedTree.orphans.remove(this);
+    }
+
+    private void writeLock() {
         writeLock = true;
         Main.loadedTree.writeLocked.push(this);
+    }
+
+    public void drawLock() {
+        drawLock = true;
+        Main.loadedTree.drawLocked.push(this);
     }
 
     @Override
@@ -57,8 +72,32 @@ public class Person implements Comparator<Person> {
         }
     }
 
+    public String getName() {
+        StringBuilder sb = new StringBuilder();
+        if(!givenName.isEmpty()) {
+            sb.append(givenName);
+        }
+        if(!(givenName.isEmpty() || familyName.isEmpty())) {
+            sb.append(" ");
+        }
+        if(!familyName.isEmpty()) {
+            sb.append(familyName);
+        }
+        if(!suffix.isEmpty() && sb.length() > 0) {
+            sb.append(" ");
+        }
+        if(!suffix.isEmpty()) {
+            sb.append(suffix);
+        }
+        return sb.toString();
+    }
+
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        if(!title.isEmpty()) {
+            sb.append(title);
+            sb.append(" ");
+        }
         if(givenName.isEmpty() && familyName.isEmpty()) {
             sb.append("Unnamed");
         } else {
@@ -69,6 +108,10 @@ public class Person implements Comparator<Person> {
                 if(!givenName.isEmpty()) sb.append(" ");
                 sb.append(familyName);
             }
+        }
+        if(!suffix.isEmpty()) {
+            sb.append(" ");
+            sb.append(suffix);
         }
         sb.append(" (");
         if(birthDate != null) {

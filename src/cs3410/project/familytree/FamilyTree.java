@@ -18,7 +18,9 @@ public class FamilyTree {
     // XXX hardcoded file for testing
     public File file = new File("test.tree");
     public Person root;
+    public Set<Person> orphans = new HashSet<>();
     public Stack<Person> writeLocked = new Stack<>();
+    public Stack<Person> drawLocked = new Stack<>();
     public Map<String, String> toWrite = new HashMap<>();
 
     public void write() throws IOException {
@@ -30,7 +32,7 @@ public class FamilyTree {
             zos.closeEntry();
         }
         zos.close();
-        unlockAll();
+        writeUnlockAll();
     }
 
     public void read() throws IOException {
@@ -40,6 +42,7 @@ public class FamilyTree {
     public Set<Person> getPeople() {
         Set<Person> set = new HashSet<>();
         addRecursive(root, set);
+        set.addAll(orphans);
         return set;
     }
 
@@ -52,17 +55,20 @@ public class FamilyTree {
         set.add(person);
         addRecursive(person.mother, set);
         addRecursive(person.father, set);
-        for(Person p : person.spouses) {
-            addRecursive(p, set);
-        }
         for(Person p : person.children) {
             addRecursive(p, set);
         }
     }
 
-    public void unlockAll() {
+    public void writeUnlockAll() {
         while(!writeLocked.isEmpty()) {
             writeLocked.pop().writeLock = false;
+        }
+    }
+
+    public void drawUnlockAll() {
+        while(!drawLocked.isEmpty()) {
+            drawLocked.pop().drawLock = false;
         }
     }
 }

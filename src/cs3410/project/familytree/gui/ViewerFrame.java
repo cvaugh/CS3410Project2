@@ -1,5 +1,6 @@
 package cs3410.project.familytree.gui;
 
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -9,11 +10,11 @@ import java.awt.event.WindowEvent;
 import java.io.IOException;
 
 import javax.swing.BoxLayout;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
@@ -23,7 +24,7 @@ import cs3410.project.familytree.Person;
 public class ViewerFrame extends JFrame {
     private final JPanel topContainer = new JPanel();
     private final JScrollPane topScrollPane = new JScrollPane(topContainer);
-    private final JPanel graph = new JPanel();
+    private final TreeGraph graph = new TreeGraph();
     private final JScrollPane bottomScrollPane = new JScrollPane(graph);
 
     public ViewerFrame() {
@@ -89,26 +90,66 @@ public class ViewerFrame extends JFrame {
         menuItem.setMnemonic(KeyEvent.VK_P);
         menuItem.addActionListener(e -> {
             Person p = new Person();
-            // TODO
+            if(Main.loadedTree.root == null) {
+                Main.loadedTree.root = p;
+                Main.loadedTree.orphans.remove(p);
+            }
             setActivePerson(p);
         });
         treeMenu.add(menuItem);
         menuItem = new JMenuItem("Select Person");
-        menuItem.setMnemonic(KeyEvent.VK_E);
+        menuItem.setMnemonic(KeyEvent.VK_S);
         menuItem.addActionListener(e -> {
-            JDialog modal = new PersonSelectDialog() {
+            new PersonSelectDialog() {
                 @Override
                 public void onClose(Person clicked) {
                     setActivePerson(clicked);
                 }
-            };
-
-            modal.setVisible(true);
+            }.setVisible(true);
+        });
+        treeMenu.add(menuItem);
+        menuItem = new JMenuItem("Clear Orphans");
+        menuItem.setMnemonic(KeyEvent.VK_C);
+        menuItem.addActionListener(e -> {
+            boolean clear = false;
+            for(Component c : topContainer.getComponents()) {
+                if(c instanceof PersonEditorPanel) {
+                    clear = Main.loadedTree.orphans.contains(((PersonEditorPanel) c).person);
+                    break;
+                }
+            }
+            if(clear) {
+                topContainer.removeAll();
+                topContainer.revalidate();
+                topContainer.repaint();
+            }
+            Main.loadedTree.orphans.clear();
         });
         treeMenu.add(menuItem);
         menuBar.add(treeMenu);
         JMenu toolsMenu = new JMenu("Tools");
-        // TODO tools menu
+        menuItem = new JMenuItem("Tree Root");
+        menuItem.setMnemonic(KeyEvent.VK_R);
+        menuItem.addActionListener(e -> {
+            JOptionPane
+                    .showMessageDialog(ViewerFrame.this,
+                            Main.loadedTree.root == null ? "The currently loaded family tree does not have a root."
+                                    : String.format("The root of the currently loaded family tree is \"%s\".",
+                                            Main.loadedTree.root.toString()),
+                            getTitle(), JOptionPane.INFORMATION_MESSAGE);
+        });
+        toolsMenu.add(menuItem);
+        menuItem = new JMenuItem("Tree Size");
+        menuItem.setMnemonic(KeyEvent.VK_S);
+        menuItem.addActionListener(e -> {
+            int size = Main.loadedTree.getSize();
+            JOptionPane.showMessageDialog(ViewerFrame.this,
+                    String.format("The loaded family tree contains %d %s, of which %d %s orphaned.", size,
+                            size == 1 ? "person" : "people", Main.loadedTree.orphans.size(),
+                            Main.loadedTree.orphans.size() == 1 ? "is" : "are"),
+                    getTitle(), JOptionPane.INFORMATION_MESSAGE);
+        });
+        toolsMenu.add(menuItem);
         menuBar.add(toolsMenu);
         setJMenuBar(menuBar);
     }
@@ -130,8 +171,15 @@ public class ViewerFrame extends JFrame {
     }
 
     private void setActivePerson(Person p) {
-        PersonEditorPanel pep = new PersonEditorPanel(p);
-        topContainer.add(pep);
+        for(Component c : topContainer.getComponents()) {
+            if(c instanceof PersonEditorPanel) {
+                ((PersonEditorPanel) c).save();
+            }
+        }
+        topContainer.removeAll();
+        topContainer.add(new PersonEditorPanel(p));
         topContainer.revalidate();
+        topContainer.repaint();
+        graph.repaint();
     }
 }
