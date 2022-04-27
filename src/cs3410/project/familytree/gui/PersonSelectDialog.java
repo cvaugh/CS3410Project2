@@ -1,10 +1,12 @@
 package cs3410.project.familytree.gui;
 
+import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JList;
 import javax.swing.JScrollPane;
@@ -35,9 +37,7 @@ public abstract class PersonSelectDialog extends JDialog {
                 if(e.getClickCount() == 2) {
                     int index = list.locationToIndex(e.getPoint());
                     if(index == -1) return;
-                    onClose(people[index]);
-                    PersonSelectDialog.this
-                            .dispatchEvent(new WindowEvent(PersonSelectDialog.this, WindowEvent.WINDOW_CLOSING));
+                    close(people[index]);
                 }
             }
 
@@ -46,6 +46,17 @@ public abstract class PersonSelectDialog extends JDialog {
         scroll.setViewportView(list);
         scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         add(scroll);
+        JButton newPerson = new JButton("New Person");
+        newPerson.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        newPerson.addActionListener(e -> {
+            close(new Person());
+        });
+        add(newPerson);
+    }
+
+    private void close(Person clicked) {
+        onClose(clicked);
+        PersonSelectDialog.this.dispatchEvent(new WindowEvent(PersonSelectDialog.this, WindowEvent.WINDOW_CLOSING));
     }
 
     public abstract void onClose(Person clicked);

@@ -24,7 +24,7 @@ import cs3410.project.familytree.Person;
 public class ViewerFrame extends JFrame {
     private final JPanel topContainer = new JPanel();
     private final JScrollPane topScrollPane = new JScrollPane(topContainer);
-    private final TreeGraph graph = new TreeGraph();
+    protected final TreeGraph graph = new TreeGraph(this);
     private final JScrollPane bottomScrollPane = new JScrollPane(graph);
 
     public ViewerFrame() {
@@ -90,10 +90,6 @@ public class ViewerFrame extends JFrame {
         menuItem.setMnemonic(KeyEvent.VK_P);
         menuItem.addActionListener(e -> {
             Person p = new Person();
-            if(Main.loadedTree.root == null) {
-                Main.loadedTree.root = p;
-                Main.loadedTree.orphans.remove(p);
-            }
             setActivePerson(p);
         });
         treeMenu.add(menuItem);
@@ -170,16 +166,21 @@ public class ViewerFrame extends JFrame {
         add(bottomScrollPane);
     }
 
-    private void setActivePerson(Person p) {
+    protected void setActivePerson(Person p) {
+        if(Main.loadedTree.root == null) {
+            Main.loadedTree.root = p;
+            Main.loadedTree.orphans.remove(p);
+        }
         for(Component c : topContainer.getComponents()) {
             if(c instanceof PersonEditorPanel) {
                 ((PersonEditorPanel) c).save();
             }
         }
         topContainer.removeAll();
-        topContainer.add(new PersonEditorPanel(p));
+        topContainer.add(new PersonEditorPanel(p, this));
         topContainer.revalidate();
         topContainer.repaint();
+        graph.setActivePerson(p);
         graph.repaint();
     }
 }

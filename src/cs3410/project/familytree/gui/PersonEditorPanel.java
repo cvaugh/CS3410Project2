@@ -6,11 +6,15 @@ import java.awt.Font;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
 
@@ -18,10 +22,12 @@ import cs3410.project.familytree.Person;
 
 public class PersonEditorPanel extends JPanel {
     final Person person;
+    private final ViewerFrame parent;
     private final KeyListener keyListener = new KeyAdapter() {
         @Override
         public void keyReleased(KeyEvent e) {
             save();
+            updateParent();
         }
     };
     private final SpringLayout layout = new SpringLayout();
@@ -31,10 +37,16 @@ public class PersonEditorPanel extends JPanel {
     private final JTextField title = new JTextField();
     private final JTextField suffix = new JTextField();
     private final JButton mother = new JButton("Click to set");
+    private final JButton clearMother = new JButton("Clear");
     private final JButton father = new JButton("Click to set");
+    private final JButton clearFather = new JButton("Clear");
+    private final JTextField birthDate = new JTextField();
+    private final JTextField deathDate = new JTextField();
+    private final JList<Person> children = new JList<>();
 
-    public PersonEditorPanel(Person person) {
+    public PersonEditorPanel(Person person, ViewerFrame parent) {
         this.person = person;
+        this.parent = parent;
         setLayout(layout);
         id.setPreferredSize(new Dimension(400, 10));
         id.setForeground(Color.GRAY);
@@ -93,24 +105,38 @@ public class PersonEditorPanel extends JPanel {
         add(motherLabel);
         mother.setPreferredSize(new Dimension(300, 30));
         mother.addActionListener(e -> {
-            new PersonSelectDialog() {
-                @Override
-                public void onClose(Person clicked) {
-                    if(clicked.equals(PersonEditorPanel.this.person)
-                            || clicked.equals(PersonEditorPanel.this.person.father)) {
-                        JOptionPane.showMessageDialog(PersonEditorPanel.this, "Invalid selection", "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                    } else {
-                        person.setMother(clicked);
-                        save();
-                        PersonEditorPanel.this.update();
+            if(person.mother != null) {
+                save();
+                parent.setActivePerson(person.mother);
+            } else {
+                new PersonSelectDialog() {
+                    @Override
+                    public void onClose(Person clicked) {
+                        if(clicked.equals(PersonEditorPanel.this.person)
+                                || clicked.equals(PersonEditorPanel.this.person.father)) {
+                            JOptionPane.showMessageDialog(PersonEditorPanel.this, "Invalid selection", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            person.setMother(clicked);
+                            save();
+                            parent.setActivePerson(person.mother);
+                        }
                     }
-                }
-            }.setVisible(true);
+                }.setVisible(true);
+            }
         });
         layout.putConstraint(SpringLayout.WEST, mother, 0, SpringLayout.EAST, motherLabel);
         layout.putConstraint(SpringLayout.NORTH, mother, 5, SpringLayout.SOUTH, id);
         add(mother);
+        clearMother.setEnabled(false);
+        clearMother.setPreferredSize(new Dimension(70, 30));
+        clearMother.addActionListener(e -> {
+            person.setMother(null);
+            update();
+        });
+        layout.putConstraint(SpringLayout.WEST, clearMother, 0, SpringLayout.EAST, mother);
+        layout.putConstraint(SpringLayout.NORTH, clearMother, 5, SpringLayout.SOUTH, id);
+        add(clearMother);
 
         JLabel fatherLabel = new JLabel("Father:");
         fatherLabel.setPreferredSize(new Dimension(60, 30));
@@ -119,24 +145,69 @@ public class PersonEditorPanel extends JPanel {
         add(fatherLabel);
         father.setPreferredSize(new Dimension(300, 30));
         father.addActionListener(e -> {
-            new PersonSelectDialog() {
-                @Override
-                public void onClose(Person clicked) {
-                    if(clicked.equals(PersonEditorPanel.this.person)
-                            || clicked.equals(PersonEditorPanel.this.person.mother)) {
-                        JOptionPane.showMessageDialog(PersonEditorPanel.this, "Invalid selection", "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                    } else {
-                        person.setFather(clicked);
-                        save();
-                        PersonEditorPanel.this.update();
+            if(person.father != null) {
+                save();
+                parent.setActivePerson(person.father);
+            } else {
+                new PersonSelectDialog() {
+                    @Override
+                    public void onClose(Person clicked) {
+                        if(clicked.equals(PersonEditorPanel.this.person)
+                                || clicked.equals(PersonEditorPanel.this.person.mother)) {
+                            JOptionPane.showMessageDialog(PersonEditorPanel.this, "Invalid selection", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            person.setFather(clicked);
+                            save();
+                            parent.setActivePerson(person.father);
+                        }
                     }
-                }
-            }.setVisible(true);
+                }.setVisible(true);
+            }
         });
         layout.putConstraint(SpringLayout.WEST, father, 0, SpringLayout.EAST, fatherLabel);
         layout.putConstraint(SpringLayout.NORTH, father, 10, SpringLayout.SOUTH, mother);
         add(father);
+        clearFather.setEnabled(false);
+        clearFather.setPreferredSize(new Dimension(70, 30));
+        clearFather.addActionListener(e -> {
+            person.setFather(null);
+            update();
+        });
+        layout.putConstraint(SpringLayout.WEST, clearFather, 0, SpringLayout.EAST, father);
+        layout.putConstraint(SpringLayout.NORTH, clearFather, 10, SpringLayout.SOUTH, mother);
+        add(clearFather);
+
+        JLabel childrenLabel = new JLabel("Children:");
+        childrenLabel.setPreferredSize(new Dimension(60, 30));
+        layout.putConstraint(SpringLayout.WEST, childrenLabel, 20, SpringLayout.EAST, suffix);
+        layout.putConstraint(SpringLayout.NORTH, childrenLabel, 10, SpringLayout.SOUTH, fatherLabel);
+        add(childrenLabel);
+        children.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if(e.getClickCount() == 2) {
+                    int index = children.locationToIndex(e.getPoint());
+                    if(index == -1) return;
+                    int i = 0;
+                    for(Person child : person.children) {
+                        if(i == index) {
+                            save();
+                            parent.setActivePerson(child);
+                        }
+                        return;
+                    }
+                }
+            }
+
+        });
+        JScrollPane childrenScroll = new JScrollPane(children);
+        childrenScroll.setPreferredSize(new Dimension(370, 150));
+        layout.putConstraint(SpringLayout.WEST, childrenScroll, 0, SpringLayout.EAST, childrenLabel);
+        layout.putConstraint(SpringLayout.NORTH, childrenScroll, 10, SpringLayout.SOUTH, father);
+        childrenScroll.setViewportView(children);
+        childrenScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        add(childrenScroll);
 
         update();
     }
@@ -148,7 +219,18 @@ public class PersonEditorPanel extends JPanel {
         title.setText(person.title);
         suffix.setText(person.suffix);
         mother.setText(person.mother == null ? "Click to set" : person.mother.toString());
+        clearMother.setEnabled(person.mother != null);
         father.setText(person.father == null ? "Click to set" : person.father.toString());
+        clearFather.setEnabled(person.father != null);
+        children.setListData(person.children.toArray(new Person[person.children.size()]));
+        updateParent();
+    }
+
+    private void updateParent() {
+        if(parent != null) {
+            parent.graph.revalidate();
+            parent.graph.repaint();
+        }
     }
 
     public void save() {

@@ -42,15 +42,35 @@ public class Person implements Comparator<Person> {
     }
 
     public void setMother(Person p) {
+        if(p == null) {
+            if(this.mother != null) {
+                this.mother.children.remove(this);
+            }
+        } else {
+            p.children.add(this);
+        }
         this.mother = p;
-        p.children.add(this);
-        Main.loadedTree.orphans.remove(this);
+        if(this.mother == null && this.father == null && this.children.isEmpty()) {
+            Main.loadedTree.orphans.add(this);
+        } else {
+            Main.loadedTree.orphans.remove(this);
+        }
     }
 
     public void setFather(Person p) {
+        if(p == null) {
+            if(this.father != null) {
+                this.father.children.remove(this);
+            }
+        } else {
+            p.children.add(this);
+        }
         this.father = p;
-        p.children.add(this);
-        Main.loadedTree.orphans.remove(this);
+        if(this.mother == null && this.father == null && this.children.isEmpty()) {
+            Main.loadedTree.orphans.add(this);
+        } else {
+            Main.loadedTree.orphans.remove(this);
+        }
     }
 
     private void writeLock() {
