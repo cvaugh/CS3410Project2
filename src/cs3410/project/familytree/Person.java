@@ -11,6 +11,7 @@ public class Person implements Comparator<Person> {
     public UUID id;
     public boolean writeLock = false;
     public boolean drawLock = false;
+    public boolean traversalLock = false;
     public String givenName = "";
     public String familyName = "";
     public String title = "";
@@ -96,6 +97,11 @@ public class Person implements Comparator<Person> {
     public void drawLock() {
         drawLock = true;
         Main.loadedTree.drawLocked.push(this);
+    }
+    
+    public void traversalLock() {
+        traversalLock = true;
+        Main.loadedTree.traversalLocked.push(this);
     }
 
     @Override

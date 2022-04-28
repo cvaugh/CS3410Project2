@@ -9,6 +9,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.JFileChooser;
@@ -213,35 +215,83 @@ public class ViewerFrame extends JFrame {
         menuItem = new JMenuItem("List Ancestors");
         menuItem.setMnemonic(KeyEvent.VK_A);
         menuItem.addActionListener(e -> {
-            // TODO
+            if(graph.active == null) {
+                JOptionPane.showMessageDialog(ViewerFrame.this, "No person is selected.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            List<Person> results = new ArrayList<>();
+            Main.loadedTree.traverse(person -> {
+                if(person != graph.active) {
+                    results.add(person);
+                }
+            }, graph.active, true, false);
+            displayList(results, String.format("%s has %d ancestors:", graph.active, results.size()), "Ancestors");
         });
         toolsMenu.add(menuItem);
         menuItem = new JMenuItem("List Descendants");
         menuItem.setMnemonic(KeyEvent.VK_A);
         menuItem.addActionListener(e -> {
-            // TODO
+            if(graph.active == null) {
+                JOptionPane.showMessageDialog(ViewerFrame.this, "No person is selected.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            List<Person> results = new ArrayList<>();
+            Main.loadedTree.traverse(person -> {
+                if(person != graph.active) {
+                    results.add(person);
+                }
+            }, graph.active, false, true);
+            displayList(results, String.format("%s has %d descendants:", graph.active, results.size()), "Descendants");
         });
         toolsMenu.add(menuItem);
         menuItem = new JMenuItem("List Leaf Nodes");
         menuItem.setMnemonic(KeyEvent.VK_A);
         menuItem.addActionListener(e -> {
-            // TODO
+            List<Person> results = new ArrayList<>();
+            Main.loadedTree.traverse(person -> {
+                if(person.mother == null && person.father == null) {
+                    results.add(person);
+                }
+            });
+            displayList(results, String.format("The tree contains %d leaf nodes:", results.size()), "Leaf Nodes");
         });
         toolsMenu.add(menuItem);
         menuItem = new JMenuItem("List Internal Nodes");
         menuItem.setMnemonic(KeyEvent.VK_A);
         menuItem.addActionListener(e -> {
-            // TODO
+            List<Person> results = new ArrayList<>();
+            Main.loadedTree.traverse(person -> {
+                if(person.mother != null || person.father != null) {
+                    results.add(person);
+                }
+            });
+            displayList(results, String.format("The tree contains %d internal nodes:", results.size()),
+                    "Internal Nodes");
         });
         toolsMenu.add(menuItem);
         menuItem = new JMenuItem("List Disconnected Nodes");
         menuItem.setMnemonic(KeyEvent.VK_A);
         menuItem.addActionListener(e -> {
-            // TODO
+            List<Person> results = new ArrayList<>();
+            results.addAll(Main.loadedTree.orphans);
+            displayList(results, String.format("The tree contains %d disconnected nodes:", results.size()),
+                    "Disconnected Nodes");
         });
         toolsMenu.add(menuItem);
         menuBar.add(toolsMenu);
         setJMenuBar(menuBar);
+    }
+
+    private void displayList(List<Person> list, String message, String title) {
+        StringBuilder sb = new StringBuilder();
+        for(Person p : list) {
+            sb.append(p.toString());
+            sb.append("\n");
+        }
+        JOptionPane.showMessageDialog(this, String.format("%s\n\n%s", message, sb.toString()), title,
+                JOptionPane.PLAIN_MESSAGE);
     }
 
     private void updateMenuBar() {

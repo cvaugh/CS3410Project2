@@ -31,6 +31,7 @@ public class FamilyTree {
     public Set<Person> orphans = new HashSet<>();
     public Stack<Person> writeLocked = new Stack<>();
     public Stack<Person> drawLocked = new Stack<>();
+    public Stack<Person> traversalLocked = new Stack<>();
     public Map<String, String> toWrite = new HashMap<>();
 
     public FamilyTree(File file) {
@@ -120,7 +121,9 @@ public class FamilyTree {
 
     public Set<Person> getPeople(boolean includeOrphaned) {
         Set<Person> set = new HashSet<>();
-        addRecursive(root, set);
+        traverse(p -> {
+            set.add(p);
+        });
         if(includeOrphaned) set.addAll(orphans);
         return set;
     }
@@ -129,13 +132,31 @@ public class FamilyTree {
         return getPeople(includeOrphaned).size();
     }
 
-    private static void addRecursive(Person person, Set<Person> set) {
-        if(person == null || set.contains(person)) return;
-        set.add(person);
-        addRecursive(person.mother, set);
-        addRecursive(person.father, set);
-        for(Person p : person.children) {
-            addRecursive(p, set);
+    public void traverse(TraversalAction action) {
+        traverse(action, true, true);
+    }
+
+    public void traverse(TraversalAction action, boolean upward, boolean downward) {
+        traverse(action, root, upward, downward);
+    }
+
+    public void traverse(TraversalAction action, Person start, boolean upward, boolean downward) {
+        traverseRecursive(action, start, upward, downward);
+        traversalUnlockAll();
+    }
+
+    private void traverseRecursive(TraversalAction action, Person person, boolean upward, boolean downward) {
+        if(person == null || person.traversalLock) return;
+        person.traversalLock();
+        action.execute(person);
+        if(upward) {
+            traverseRecursive(action, person.mother, upward, downward);
+            traverseRecursive(action, person.father, upward, downward);
+        }
+        if(downward) {
+            for(Person child : person.children) {
+                traverseRecursive(action, child, upward, downward);
+            }
         }
     }
 
@@ -148,6 +169,12 @@ public class FamilyTree {
     public void drawUnlockAll() {
         while(!drawLocked.isEmpty()) {
             drawLocked.pop().drawLock = false;
+        }
+    }
+
+    private void traversalUnlockAll() {
+        while(!traversalLocked.isEmpty()) {
+            traversalLocked.pop().traversalLock = false;
         }
     }
 }

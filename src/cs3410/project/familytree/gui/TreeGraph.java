@@ -21,7 +21,7 @@ public class TreeGraph extends JPanel {
     private static final Color FAKE_COLOR = new Color(0x9E9E9E);
     private List<Node> nodes = new ArrayList<>();
     private int maxDepth = -1;
-    private Person active;
+    Person active;
 
     public TreeGraph(ViewerFrame parent) {
         this.addMouseMotionListener(new MouseMotionAdapter() {
