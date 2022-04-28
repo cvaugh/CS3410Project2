@@ -24,9 +24,9 @@ public abstract class PersonSelectDialog extends JDialog {
         setLocationRelativeTo(null);
         setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
 
-        final Person[] people = new Person[Main.loadedTree.getSize()];
+        final Person[] people = new Person[Main.loadedTree.getSize(true)];
         int i = 0;
-        for(Person p : Main.loadedTree.getPeople()) {
+        for(Person p : Main.loadedTree.getPeople(true)) {
             people[i] = p;
             i++;
         }
@@ -42,16 +42,16 @@ public abstract class PersonSelectDialog extends JDialog {
             }
 
         });
-        JScrollPane scroll = new JScrollPane(list);
-        scroll.setViewportView(list);
-        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        add(scroll);
         JButton newPerson = new JButton("New Person");
         newPerson.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         newPerson.addActionListener(e -> {
             close(new Person());
         });
         add(newPerson);
+        JScrollPane scroll = new JScrollPane(list);
+        scroll.setViewportView(list);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        add(scroll);
     }
 
     private void close(Person clicked) {

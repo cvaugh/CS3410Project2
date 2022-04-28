@@ -8,6 +8,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.ParseException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -18,11 +22,14 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
 
+import cs3410.project.familytree.FamilyTree;
 import cs3410.project.familytree.Person;
 
 public class PersonEditorPanel extends JPanel {
+    private static final Color ERROR_COLOR = new Color(0xFFEBEE);
     final Person person;
     private final ViewerFrame parent;
+    private final Instant now = new Date().toInstant();
     private final KeyListener keyListener = new KeyAdapter() {
         @Override
         public void keyReleased(KeyEvent e) {
@@ -41,7 +48,9 @@ public class PersonEditorPanel extends JPanel {
     private final JButton father = new JButton("Click to set");
     private final JButton clearFather = new JButton("Clear");
     private final JTextField birthDate = new JTextField();
+    private final JLabel age = new JLabel();
     private final JTextField deathDate = new JTextField();
+    private final JLabel deathAge = new JLabel();
     private final JList<Person> children = new JList<>();
 
     public PersonEditorPanel(Person person, ViewerFrame parent) {
@@ -195,6 +204,7 @@ public class PersonEditorPanel extends JPanel {
                             save();
                             parent.setActivePerson(child);
                         }
+                        i++;
                         return;
                     }
                 }
@@ -208,6 +218,48 @@ public class PersonEditorPanel extends JPanel {
         childrenScroll.setViewportView(children);
         childrenScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         add(childrenScroll);
+
+        JLabel birthDateLabel = new JLabel("Birth Date (YYYY-MM-DD):");
+        birthDateLabel.setPreferredSize(new Dimension(150, 30));
+        layout.putConstraint(SpringLayout.WEST, birthDateLabel, 5, SpringLayout.WEST, this);
+        layout.putConstraint(SpringLayout.NORTH, birthDateLabel, 10, SpringLayout.SOUTH, fatherLabel);
+        add(birthDateLabel);
+        birthDate.setPreferredSize(new Dimension(80, 30));
+        birthDate.addKeyListener(keyListener);
+        birthDate.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                update();
+            }
+        });
+        layout.putConstraint(SpringLayout.WEST, birthDate, 0, SpringLayout.EAST, birthDateLabel);
+        layout.putConstraint(SpringLayout.NORTH, birthDate, 10, SpringLayout.SOUTH, father);
+        add(birthDate);
+        age.setPreferredSize(new Dimension(160, 30));
+        layout.putConstraint(SpringLayout.WEST, age, 5, SpringLayout.EAST, birthDate);
+        layout.putConstraint(SpringLayout.NORTH, age, 10, SpringLayout.SOUTH, father);
+        add(age);
+
+        JLabel deathDateLabel = new JLabel("Death Date (YYYY-MM-DD):");
+        deathDateLabel.setPreferredSize(new Dimension(150, 30));
+        layout.putConstraint(SpringLayout.WEST, deathDateLabel, 5, SpringLayout.WEST, this);
+        layout.putConstraint(SpringLayout.NORTH, deathDateLabel, 10, SpringLayout.SOUTH, birthDateLabel);
+        add(deathDateLabel);
+        deathDate.setPreferredSize(new Dimension(80, 30));
+        deathDate.addKeyListener(keyListener);
+        deathDate.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                update();
+            }
+        });
+        layout.putConstraint(SpringLayout.WEST, deathDate, 0, SpringLayout.EAST, deathDateLabel);
+        layout.putConstraint(SpringLayout.NORTH, deathDate, 10, SpringLayout.SOUTH, birthDate);
+        add(deathDate);
+        deathAge.setPreferredSize(new Dimension(160, 30));
+        layout.putConstraint(SpringLayout.WEST, deathAge, 5, SpringLayout.EAST, birthDate);
+        layout.putConstraint(SpringLayout.NORTH, deathAge, 10, SpringLayout.SOUTH, age);
+        add(deathAge);
 
         update();
     }
@@ -223,6 +275,29 @@ public class PersonEditorPanel extends JPanel {
         father.setText(person.father == null ? "Click to set" : person.father.toString());
         clearFather.setEnabled(person.father != null);
         children.setListData(person.children.toArray(new Person[person.children.size()]));
+        if(person.birthDate != null) {
+            birthDate.setText(FamilyTree.DATE_FORMAT.format(person.birthDate));
+            long diff = Duration.between(person.birthDate.toInstant(), now).toDays();
+            long days = diff % 365;
+            long years = (diff - days) / 365;
+            age.setText(String.format("(%d %s, %d %s ago)", years, years == 1 ? "year" : "years", days,
+                    days == 1 ? "day" : "days"));
+            if(person.deathDate != null) {
+                long ddiff = Duration.between(person.birthDate.toInstant(), person.deathDate.toInstant()).toDays();
+                long ddays = ddiff % 365;
+                long dyears = (ddiff - ddays) / 365;
+                deathAge.setText(String.format("(%d %s, %d %s old)", dyears, dyears == 1 ? "year" : "years", ddays,
+                        ddays == 1 ? "day" : "days"));
+            } else {
+                deathAge.setText("");
+            }
+        } else {
+            age.setText("");
+            deathAge.setText("");
+        }
+        if(person.deathDate != null) {
+            deathDate.setText(FamilyTree.DATE_FORMAT.format(person.deathDate));
+        }
         updateParent();
     }
 
@@ -239,7 +314,30 @@ public class PersonEditorPanel extends JPanel {
             person.familyName = familyName.getText();
             person.title = title.getText();
             person.suffix = suffix.getText();
-            // TODO missing fields
+            if(birthDate.getText().length() != 10) {
+                person.birthDate = null;
+                birthDate.setBackground(birthDate.getText().isEmpty() ? Color.WHITE : ERROR_COLOR);
+            } else {
+                try {
+                    person.birthDate = FamilyTree.DATE_FORMAT.parse(birthDate.getText());
+                    birthDate.setBackground(Color.WHITE);
+                } catch(ParseException e) {
+                    person.birthDate = null;
+                    birthDate.setBackground(ERROR_COLOR);
+                }
+            }
+            if(deathDate.getText().length() != 10) {
+                person.deathDate = null;
+                deathDate.setBackground(deathDate.getText().isEmpty() ? Color.WHITE : ERROR_COLOR);
+            } else {
+                try {
+                    person.deathDate = FamilyTree.DATE_FORMAT.parse(deathDate.getText());
+                    deathDate.setBackground(Color.WHITE);
+                } catch(ParseException e) {
+                    person.deathDate = null;
+                    deathDate.setBackground(ERROR_COLOR);
+                }
+            }
         }
     }
 }

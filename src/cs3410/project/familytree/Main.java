@@ -6,7 +6,6 @@ public class Main {
     public static FamilyTree loadedTree;
 
     public static void main(String[] args) {
-        loadedTree = new FamilyTree();
         new ViewerFrame().setVisible(true);
     }
 }

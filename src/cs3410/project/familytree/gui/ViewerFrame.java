@@ -7,9 +7,11 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.io.IOException;
 
 import javax.swing.BoxLayout;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -17,15 +19,47 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.UIManager;
+import javax.swing.filechooser.FileFilter;
 
+import cs3410.project.familytree.FamilyTree;
 import cs3410.project.familytree.Main;
 import cs3410.project.familytree.Person;
 
 public class ViewerFrame extends JFrame {
+    private static final JFileChooser FILE_CHOOSER;
+    static {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        FILE_CHOOSER = new JFileChooser();
+        try {
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        FILE_CHOOSER.setFileFilter(new FileFilter() {
+            @Override
+            public boolean accept(File f) {
+                return f.isDirectory() || f.getName().endsWith(".tree");
+            }
+
+            @Override
+            public String getDescription() {
+                return "Family Tree (.tree)";
+            }
+        });
+        FILE_CHOOSER.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        FILE_CHOOSER.setCurrentDirectory(new File("."));
+    }
     private final JPanel topContainer = new JPanel();
     private final JScrollPane topScrollPane = new JScrollPane(topContainer);
     protected final TreeGraph graph = new TreeGraph(this);
     private final JScrollPane bottomScrollPane = new JScrollPane(graph);
+    private final JMenu treeMenu = new JMenu("Tree");
+    private final JMenu toolsMenu = new JMenu("Tools");
 
     public ViewerFrame() {
         setTitle("Family Tree");
@@ -59,6 +93,10 @@ public class ViewerFrame extends JFrame {
         addComponents();
         pack();
         setLocationRelativeTo(null);
+        updateMenuBar();
+        if(Main.loadedTree != null && Main.loadedTree.root != null) {
+            setActivePerson(Main.loadedTree.root);
+        }
     }
 
     private void addMenu() {
@@ -68,13 +106,38 @@ public class ViewerFrame extends JFrame {
         JMenuItem menuItem = new JMenuItem("New Tree");
         menuItem.setMnemonic(KeyEvent.VK_N);
         menuItem.addActionListener(e -> {
-            // TODO
+            int r = FILE_CHOOSER.showSaveDialog(ViewerFrame.this);
+            if(r == JFileChooser.APPROVE_OPTION) {
+                if(FILE_CHOOSER.getSelectedFile().exists()) {
+                    JOptionPane.showMessageDialog(ViewerFrame.this, "The selected file already exists.",
+                            "Error Creating Tree", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    Main.loadedTree = new FamilyTree(FILE_CHOOSER.getSelectedFile());
+                    clearActivePerson();
+                    updateMenuBar();
+                }
+            }
         });
         fileMenu.add(menuItem);
         menuItem = new JMenuItem("Open Tree");
         menuItem.setMnemonic(KeyEvent.VK_O);
         menuItem.addActionListener(e -> {
-            // TODO
+            int r = FILE_CHOOSER.showSaveDialog(ViewerFrame.this);
+            if(r == JFileChooser.APPROVE_OPTION) {
+                try {
+                    FamilyTree.open(FILE_CHOOSER.getSelectedFile());
+                    if(Main.loadedTree.root != null) {
+                        setActivePerson(Main.loadedTree.root);
+                    } else {
+                        clearActivePerson();
+                    }
+                    updateMenuBar();
+                } catch(IOException e1) {
+                    JOptionPane.showMessageDialog(ViewerFrame.this, "An exception occurred while loading the file.",
+                            "Error Loading Tree", JOptionPane.ERROR_MESSAGE);
+                    e1.printStackTrace();
+                }
+            }
         });
         fileMenu.add(menuItem);
         fileMenu.addSeparator();
@@ -85,7 +148,7 @@ public class ViewerFrame extends JFrame {
         });
         fileMenu.add(menuItem);
         menuBar.add(fileMenu);
-        JMenu treeMenu = new JMenu("Tree");
+        treeMenu.setEnabled(false);
         menuItem = new JMenuItem("New Person");
         menuItem.setMnemonic(KeyEvent.VK_P);
         menuItem.addActionListener(e -> {
@@ -104,7 +167,7 @@ public class ViewerFrame extends JFrame {
             }.setVisible(true);
         });
         treeMenu.add(menuItem);
-        menuItem = new JMenuItem("Clear Orphans");
+        menuItem = new JMenuItem("Clear Disconnected");
         menuItem.setMnemonic(KeyEvent.VK_C);
         menuItem.addActionListener(e -> {
             boolean clear = false;
@@ -123,7 +186,7 @@ public class ViewerFrame extends JFrame {
         });
         treeMenu.add(menuItem);
         menuBar.add(treeMenu);
-        JMenu toolsMenu = new JMenu("Tools");
+        toolsMenu.setEnabled(false);
         menuItem = new JMenuItem("Tree Root");
         menuItem.setMnemonic(KeyEvent.VK_R);
         menuItem.addActionListener(e -> {
@@ -138,16 +201,52 @@ public class ViewerFrame extends JFrame {
         menuItem = new JMenuItem("Tree Size");
         menuItem.setMnemonic(KeyEvent.VK_S);
         menuItem.addActionListener(e -> {
-            int size = Main.loadedTree.getSize();
+            int size = Main.loadedTree.getSize(true);
             JOptionPane.showMessageDialog(ViewerFrame.this,
-                    String.format("The loaded family tree contains %d %s, of which %d %s orphaned.", size,
-                            size == 1 ? "person" : "people", Main.loadedTree.orphans.size(),
+                    String.format(
+                            "The loaded family tree contains %d %s, of which %d %s are disconnected from the root.",
+                            size, size == 1 ? "person" : "people", Main.loadedTree.orphans.size(),
                             Main.loadedTree.orphans.size() == 1 ? "is" : "are"),
                     getTitle(), JOptionPane.INFORMATION_MESSAGE);
         });
         toolsMenu.add(menuItem);
+        menuItem = new JMenuItem("List Ancestors");
+        menuItem.setMnemonic(KeyEvent.VK_A);
+        menuItem.addActionListener(e -> {
+            // TODO
+        });
+        toolsMenu.add(menuItem);
+        menuItem = new JMenuItem("List Descendants");
+        menuItem.setMnemonic(KeyEvent.VK_A);
+        menuItem.addActionListener(e -> {
+            // TODO
+        });
+        toolsMenu.add(menuItem);
+        menuItem = new JMenuItem("List Leaf Nodes");
+        menuItem.setMnemonic(KeyEvent.VK_A);
+        menuItem.addActionListener(e -> {
+            // TODO
+        });
+        toolsMenu.add(menuItem);
+        menuItem = new JMenuItem("List Internal Nodes");
+        menuItem.setMnemonic(KeyEvent.VK_A);
+        menuItem.addActionListener(e -> {
+            // TODO
+        });
+        toolsMenu.add(menuItem);
+        menuItem = new JMenuItem("List Disconnected Nodes");
+        menuItem.setMnemonic(KeyEvent.VK_A);
+        menuItem.addActionListener(e -> {
+            // TODO
+        });
+        toolsMenu.add(menuItem);
         menuBar.add(toolsMenu);
         setJMenuBar(menuBar);
+    }
+
+    private void updateMenuBar() {
+        treeMenu.setEnabled(Main.loadedTree != null);
+        toolsMenu.setEnabled(Main.loadedTree != null);
     }
 
     private void addComponents() {
@@ -164,6 +263,14 @@ public class ViewerFrame extends JFrame {
         bottomScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         bottomScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         add(bottomScrollPane);
+    }
+
+    protected void clearActivePerson() {
+        topContainer.removeAll();
+        topContainer.revalidate();
+        topContainer.repaint();
+        graph.setActivePerson(null);
+        graph.repaint();
     }
 
     protected void setActivePerson(Person p) {

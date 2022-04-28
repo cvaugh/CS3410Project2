@@ -11,7 +11,6 @@ public class Person implements Comparator<Person> {
     public UUID id;
     public boolean writeLock = false;
     public boolean drawLock = false;
-    public String description = "";
     public String givenName = "";
     public String familyName = "";
     public String title = "";
@@ -22,18 +21,31 @@ public class Person implements Comparator<Person> {
     public Person father;
     public Set<Person> children = new HashSet<>();
 
-    public Person() {
-        id = UUID.randomUUID();
+    public Person(UUID id) {
+        this.id = id;
         Main.loadedTree.orphans.add(this);
+    }
+
+    public Person() {
+        this(UUID.randomUUID());
     }
 
     public void write() throws IOException {
         if(writeLock) return;
         writeLock();
-        // TODO write full metadata
-        Main.loadedTree.toWrite.put(id.toString() + ".person",
-                String.format("description=%s\ngivenName=%s\nfamilyName=%s\ntitle=%s\nsuffix=%s\n", description,
-                        givenName, familyName, title, suffix));
+        StringBuilder c = new StringBuilder();
+        for(Person p : children) {
+            c.append(",");
+            c.append(p.id);
+        }
+        Main.loadedTree.toWrite.put((this == Main.loadedTree.root ? "r" : "") + id.toString() + ".person",
+                String.format(
+                        "givenName=%s\nfamilyName=%s\ntitle=%s\nsuffix=%s\nmother=%s\nfather=%s\nchildren=%s\nbirthDate=%s\ndeathDate=%s\n",
+                        givenName, familyName, title, suffix, mother == null ? "null" : mother.id.toString(),
+                        father == null ? "null" : father.id.toString(),
+                        children.isEmpty() ? "null" : c.toString().substring(1),
+                        birthDate == null ? "null" : FamilyTree.DATE_FORMAT.format(birthDate),
+                        deathDate == null ? "null" : FamilyTree.DATE_FORMAT.format(deathDate)));
         if(mother != null) mother.write();
         if(father != null) father.write();
         for(Person p : children) {
@@ -48,6 +60,7 @@ public class Person implements Comparator<Person> {
             }
         } else {
             p.children.add(this);
+            Main.loadedTree.orphans.remove(p);
         }
         this.mother = p;
         if(this.mother == null && this.father == null && this.children.isEmpty()) {
@@ -64,9 +77,11 @@ public class Person implements Comparator<Person> {
             }
         } else {
             p.children.add(this);
+            Main.loadedTree.orphans.remove(p);
         }
         this.father = p;
-        if(this.mother == null && this.father == null && this.children.isEmpty()) {
+        if(this.mother == null && this.father == null && this.children.isEmpty()
+                && !this.equals(Main.loadedTree.root)) {
             Main.loadedTree.orphans.add(this);
         } else {
             Main.loadedTree.orphans.remove(this);
