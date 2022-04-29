@@ -74,10 +74,10 @@ public class TreeGraph extends JPanel {
             for(Node n : nodes) {
                 if(n.depth == maxDepth + 1) continue;
                 if(n.parents[0] == null) {
-                    toAdd.add(getNullParent(g, n, false, n.depth, n.y));
+                    toAdd.add(getNullParent(g, n, false, n.y));
                 }
                 if(n.parents[1] == null) {
-                    toAdd.add(getNullParent(g, n, true, n.depth, n.y));
+                    toAdd.add(getNullParent(g, n, true, n.y));
                 }
             }
             nodes.addAll(toAdd);
@@ -140,9 +140,11 @@ public class TreeGraph extends JPanel {
         }
     }
 
-    private Node getNullParent(Graphics g, Node child, boolean right, int depth, int y) {
-        Node parent = new Node(null, "Unknown", "", false, false, depth + 1, y - 50,
+    private Node getNullParent(Graphics g, Node child, boolean right, int y) {
+        Node parent = new Node(null, "Unknown", "", false, false, child.depth + 1, y - 50,
                 g.getFontMetrics().stringWidth("Unknown") + 10, 20, child.depth + (right ? 1 : -1), true);
+        parent.lefts = child.lefts + (right ? 0 : 1);
+        parent.rights = child.rights + (right ? 1 : 0);
         child.parents[right ? 1 : 0] = parent;
         return parent;
     }

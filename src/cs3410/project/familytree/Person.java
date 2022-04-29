@@ -1,13 +1,12 @@
 package cs3410.project.familytree;
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-public class Person implements Comparator<Person> {
+public class Person implements Comparable<Person> {
     public UUID id;
     public boolean writeLock = false;
     public boolean drawLock = false;
@@ -98,18 +97,18 @@ public class Person implements Comparator<Person> {
         drawLock = true;
         Main.loadedTree.drawLocked.push(this);
     }
-    
+
     public void traversalLock() {
         traversalLock = true;
         Main.loadedTree.traversalLocked.push(this);
     }
 
     @Override
-    public int compare(Person arg0, Person arg1) {
-        if(arg0.familyName.equalsIgnoreCase(arg1.familyName)) {
-            return arg0.givenName.compareTo(arg1.givenName);
+    public int compareTo(Person p) {
+        if(this.familyName.equalsIgnoreCase(p.familyName)) {
+            return this.givenName.compareTo(p.givenName);
         } else {
-            return arg0.familyName.compareTo(arg1.familyName);
+            return this.familyName.compareTo(p.familyName);
         }
     }
 

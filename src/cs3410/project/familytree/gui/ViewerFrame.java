@@ -10,6 +10,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -285,6 +286,12 @@ public class ViewerFrame extends JFrame {
     }
 
     private void displayList(List<Person> list, String message, String title) {
+        list.sort(new Comparator<Person>() {
+            @Override
+            public int compare(Person p1, Person p2) {
+                return p1.compareTo(p2);
+            }
+        });
         StringBuilder sb = new StringBuilder();
         for(Person p : list) {
             sb.append(p.toString());
