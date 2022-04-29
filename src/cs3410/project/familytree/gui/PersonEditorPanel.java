@@ -29,12 +29,19 @@ public class PersonEditorPanel extends JPanel {
     private static final Color ERROR_COLOR = new Color(0xFFEBEE);
     final Person person;
     private final ViewerFrame parent;
+    /**
+     * The date at which the application was launched, for comparison.
+     */
     private final Instant now = new Date().toInstant();
+    /**
+     * Save changes and update the parent component when a key is
+     * pressed within a JTextField.
+     */
     private final KeyListener keyListener = new KeyAdapter() {
         @Override
         public void keyReleased(KeyEvent e) {
             save();
-            updateParent();
+            updateGraph();
         }
     };
     private final SpringLayout layout = new SpringLayout();
@@ -53,6 +60,9 @@ public class PersonEditorPanel extends JPanel {
     private final JLabel deathAge = new JLabel();
     private final JList<Person> children = new JList<>();
 
+    /**
+     * Creates the components and layout for the panel.
+     */
     public PersonEditorPanel(Person person, ViewerFrame parent) {
         this.person = person;
         this.parent = parent;
@@ -115,9 +125,13 @@ public class PersonEditorPanel extends JPanel {
         mother.setPreferredSize(new Dimension(300, 30));
         mother.addActionListener(e -> {
             if(person.mother != null) {
+                // If the person's mother is not null, save changes
+                // and switch to the person's mother as the active person.
                 save();
                 parent.setActivePerson(person.mother);
             } else {
+                // If the person's mother is null, show a dialog for selecting
+                // an existing person or creating a new person.
                 new PersonSelectDialog() {
                     @Override
                     public void onClose(Person clicked) {
@@ -155,9 +169,13 @@ public class PersonEditorPanel extends JPanel {
         father.setPreferredSize(new Dimension(300, 30));
         father.addActionListener(e -> {
             if(person.father != null) {
+                // If the person's father is not null, save changes
+                // and switch to the person's father as the active person.
                 save();
                 parent.setActivePerson(person.father);
             } else {
+                // If the person's father is null, show a dialog for selecting
+                // an existing person or creating a new person.
                 new PersonSelectDialog() {
                     @Override
                     public void onClose(Person clicked) {
@@ -263,6 +281,9 @@ public class PersonEditorPanel extends JPanel {
         update();
     }
 
+    /**
+     * Populates the panel's components with the details of its Person.
+     */
     private void update() {
         id.setText("ID: " + person.id);
         givenName.setText(person.givenName);
@@ -297,16 +318,19 @@ public class PersonEditorPanel extends JPanel {
         if(person.deathDate != null) {
             deathDate.setText(FamilyTree.DATE_FORMAT.format(person.deathDate));
         }
-        updateParent();
+        updateGraph();
     }
 
-    private void updateParent() {
+    private void updateGraph() {
         if(parent != null) {
             parent.graph.revalidate();
             parent.graph.repaint();
         }
     }
 
+    /**
+     * Validates and saves the contents of the components JTextFields.
+     */
     public void save() {
         if(person != null) {
             person.givenName = givenName.getText();

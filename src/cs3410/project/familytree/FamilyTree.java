@@ -24,10 +24,13 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class FamilyTree {
+    // Date format, e.g. "2022-04-28" for the date April 28, 2022
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    // Year-only date format, e.g. "2022" for the date April 28, 2022
     public static final DateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy");
     public File file;
     public Person root;
+    // Set of people disconnected from the main tree
     public Set<Person> orphans = new HashSet<>();
     public Stack<Person> writeLocked = new Stack<>();
     public Stack<Person> drawLocked = new Stack<>();
@@ -38,6 +41,12 @@ public class FamilyTree {
         this.file = file;
     }
 
+    /**
+     * Writes the tree to a ZIP file with the extension <tt>tree</tt>
+     * at the location specified by <tt>file</tt>.
+     * 
+     * @see Person#write()
+     */
     public void write() throws IOException {
         if(root != null) root.write();
         ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(file));
@@ -50,6 +59,27 @@ public class FamilyTree {
         writeUnlockAll();
     }
 
+    /**
+     * Reads the tree from the location specified by <tt>file</tt>.
+     * <br>
+     * Each ZIP entry is a file containing a person's metadata, one
+     * key=value pair per line, in the following order:
+     * 
+     * <ul>
+     * <li>givenName</li>
+     * <li>familyName</li>
+     * <li>title</li>
+     * <li>suffix</li>
+     * <li>mother</li>
+     * <li>father</li>
+     * <li>children</li>
+     * <li>birthDate</li>
+     * <li>deathDate</li>
+     * </ul>
+     * 
+     * The name of each entry is the person's UUID. The entry prefixed
+     * with "r" is the root of the tree.
+     */
     public void read() throws IOException {
         ZipFile zip = new ZipFile(file);
         Enumeration<? extends ZipEntry> entries = zip.entries();
@@ -104,6 +134,8 @@ public class FamilyTree {
             if(isRoot) root = person;
         }
         zip.close();
+        // After all of the tree's people have been created,
+        // link them together by references.
         for(String id : toAdd.keySet()) {
             toAdd.get(id).setMother(toAdd.get(motherIds.get(id)));
             toAdd.get(id).setFather(toAdd.get(fatherIds.get(id)));
@@ -113,12 +145,21 @@ public class FamilyTree {
         }
     }
 
+    /**
+     * Creates a new <tt>FamilyTree</tt> instance from the specified ZIP file.
+     * 
+     * @see #read()
+     */
     public static void open(File file) throws IOException {
         FamilyTree tree = new FamilyTree(file);
         Main.loadedTree = tree;
         tree.read();
     }
 
+    /**
+     * @param includeOrphaned If this is true, includes nodes disconnected from the tree in the set.
+     * @return A <tt>Set</tt> of all people in the tree.
+     */
     public Set<Person> getPeople(boolean includeOrphaned) {
         Set<Person> set = new HashSet<>();
         traverse(p -> {
@@ -128,6 +169,10 @@ public class FamilyTree {
         return set;
     }
 
+    /**
+     * @param includeOrphaned If this is true, includes nodes disconnected from the tree in the count.
+     * @return The total number of people in the tree.
+     */
     public int getSize(boolean includeOrphaned) {
         return getPeople(includeOrphaned).size();
     }
@@ -145,6 +190,12 @@ public class FamilyTree {
         traversalUnlockAll();
     }
 
+    /**
+     * @param action An action to perform on each person found by the traversal.
+     * @param person The person at which to start the traversal.
+     * @param upward If true, includes the person's parents in the traversal.
+     * @param downward If true, includes the person's children in the traversal.
+     */
     private void traverseRecursive(TraversalAction action, Person person, boolean upward, boolean downward) {
         if(person == null || person.traversalLock) return;
         person.traversalLock();

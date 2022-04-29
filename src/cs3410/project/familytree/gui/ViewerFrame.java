@@ -32,12 +32,14 @@ import cs3410.project.familytree.Person;
 public class ViewerFrame extends JFrame {
     private static final JFileChooser FILE_CHOOSER;
     static {
+        // Attempts to set the JFileChooser's look and feel to the system style
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch(Exception e) {
             e.printStackTrace();
         }
         FILE_CHOOSER = new JFileChooser();
+        // Resets the look and feel to Java's default for all other Swing components
         try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch(Exception e) {
@@ -70,6 +72,7 @@ public class ViewerFrame extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
+                // If a tree has been loaded, save it before exiting.
                 if(Main.loadedTree != null) {
                     try {
                         Main.loadedTree.write();
@@ -85,6 +88,9 @@ public class ViewerFrame extends JFrame {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
+                // Revalidate and repaint components when the window is resized.
+                // revalidate() is necessary here due to a bug in the Windows implementation of
+                // Swing when maximizing a JFrame.
                 topContainer.revalidate();
                 graph.revalidate();
                 graph.repaint();
@@ -97,6 +103,7 @@ public class ViewerFrame extends JFrame {
         pack();
         setLocationRelativeTo(null);
         updateMenuBar();
+        // If a tree is loaded and it has a root, set the root as the active person.
         if(Main.loadedTree != null && Main.loadedTree.root != null) {
             setActivePerson(Main.loadedTree.root);
         }
@@ -285,6 +292,9 @@ public class ViewerFrame extends JFrame {
         setJMenuBar(menuBar);
     }
 
+    /**
+     * Shows a dialog with the given title, message, and list of people.
+     */
     private void displayList(List<Person> list, String message, String title) {
         list.sort(new Comparator<Person>() {
             @Override

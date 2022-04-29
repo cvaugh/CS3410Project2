@@ -21,11 +21,17 @@ public class TreeGraph extends JPanel {
     private static final Color FAKE_COLOR = new Color(0x9E9E9E);
     private List<Node> nodes = new ArrayList<>();
     private int maxDepth = -1;
+    /**
+     * The currently selected person.
+     */
     Person active;
 
     public TreeGraph(ViewerFrame parent) {
         this.addMouseMotionListener(new MouseMotionAdapter() {
             public void mouseMoved(MouseEvent e) {
+                // Repaint the panel when the mouse moves over it,
+                // rather then on a fixed update cycle, to prevent
+                // unnecessary lag.
                 revalidate();
                 repaint();
             }
@@ -35,6 +41,8 @@ public class TreeGraph extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 for(Node node : nodes) {
                     if(node.contains(e.getPoint().x, e.getPoint().y) && node.person != null) {
+                        // If a node is clicked and the node is not a dummy person,
+                        // set the node as the active person.
                         parent.setActivePerson(node.person);
                     }
                 }
@@ -46,10 +54,14 @@ public class TreeGraph extends JPanel {
     public void paint(Graphics g) {
         super.paint(g);
         nodes.clear();
+        // Blank the panel.
         g.clearRect(0, 0, getWidth(), getHeight());
+        // If no tree is loaded, do not attempt to draw any nodes.
         if(Main.loadedTree == null) return;
         maxDepth = -1;
+        // Recursively create nodes for the ancestors of the active person.
         createNodesRecursive(g, active, getHeight() - getHeight() / 5, 0, 0);
+        // Unlock all nodes for the next repaint.
         Main.loadedTree.drawUnlockAll();
         drawNodes(g);
     }
@@ -58,26 +70,27 @@ public class TreeGraph extends JPanel {
         if(nodes.size() == 0) return;
         for(Node n : nodes) {
             if(n.person != null) {
+                // Connect each node to its parents, if they exist.
                 if(n.person.mother != null) {
-                    Node mother = getNode(n.person.mother);
-                    n.parents[0] = mother;
+                    n.parents[0] = getNode(n.person.mother);
                 }
                 if(n.person.father != null) {
-                    Node father = getNode(n.person.father);
-                    n.parents[1] = father;
+                    n.parents[1] = getNode(n.person.father);
                 }
             }
         }
         boolean filled = false;
+        // If the tree is not a complete tree, add dummy "Unknown" nodes to
+        // nodes with missing parents. Repeat until the tree is complete.
         while(!filled) {
             List<Node> toAdd = new ArrayList<Node>();
             for(Node n : nodes) {
                 if(n.depth == maxDepth + 1) continue;
                 if(n.parents[0] == null) {
-                    toAdd.add(getNullParent(g, n, false, n.y));
+                    toAdd.add(getNullParent(g, n, false));
                 }
                 if(n.parents[1] == null) {
-                    toAdd.add(getNullParent(g, n, true, n.y));
+                    toAdd.add(getNullParent(g, n, true));
                 }
             }
             nodes.addAll(toAdd);
@@ -90,6 +103,8 @@ public class TreeGraph extends JPanel {
                 }
             }
         }
+        // Group the nodes of each generation, then
+        // calculate the total width of each generation.
         @SuppressWarnings("unchecked")
         List<Node>[] generations = new List[maxDepth + 2];
         for(int i = 0; i < generations.length; i++) {
@@ -101,12 +116,16 @@ public class TreeGraph extends JPanel {
             generationWidths[n.depth] += n.width;
         }
         for(int i = 0; i < generations.length; i++) {
+            // Sort each generation's nodes from left to right.
+            // This produces unexpected results for dummy nodes.
             generations[i].sort(new Comparator<Node>() {
                 @Override
                 public int compare(Node arg0, Node arg1) {
                     return Integer.compare(Math.min(arg0.lefts, arg0.rights), Math.min(arg1.lefts, arg1.rights));
                 }
             });
+            // If an entire generation consists of only dummy nodes,
+            // remove it from the final tree.
             boolean allFake = true;
             int x = getWidth() / 2 - generationWidths[i] / 2;
             for(Node n : generations[i]) {
@@ -127,6 +146,15 @@ public class TreeGraph extends JPanel {
         }
     }
 
+    /**
+     * Creates a node for the given Person, then recursively does the same
+     * for the Person's parents. 
+     * 
+     * @param p The person for the node to represent.
+     * @param y The y coordinate of the node's top-left corner.
+     * @param depth The depth of the node in relation to the root.
+     * @param direction The direction of the node in relation to the root.
+     */
     private void createNodesRecursive(Graphics g, Person p, int y, int depth, int direction) {
         if(p == null || p.drawLock) return;
         if(depth > maxDepth) maxDepth = depth;
@@ -140,8 +168,13 @@ public class TreeGraph extends JPanel {
         }
     }
 
-    private Node getNullParent(Graphics g, Node child, boolean right, int y) {
-        Node parent = new Node(null, "Unknown", "", false, false, child.depth + 1, y - 50,
+    /**
+     * @param child The child for which to create a dummy parent.
+     * @param right Creates a node to the right of the child if true, otherwise to the left.
+     * @return A dummy "Unknown" node representing the missing parent of a person.
+     */
+    private Node getNullParent(Graphics g, Node child, boolean right) {
+        Node parent = new Node(null, "Unknown", "", false, false, child.depth + 1, child.y - 50,
                 g.getFontMetrics().stringWidth("Unknown") + 10, 20, child.depth + (right ? 1 : -1), true);
         parent.lefts = child.lefts + (right ? 0 : 1);
         parent.rights = child.rights + (right ? 1 : 0);
@@ -149,6 +182,13 @@ public class TreeGraph extends JPanel {
         return parent;
     }
 
+    /**
+     * @param p The Person for which to create a Node.
+     * @param y The y coordinate of the upper-left corner of the node.
+     * @param depth The depth, or generation, of the node in relation to the active node.
+     * @param direction The direction of the node in relation to the root: positive for right,
+     *                  or negative for left.
+     */
     private void createNode(Graphics g, Person p, int y, int depth, int direction) {
         String name = p.getName();
         String dates = String.format("%s-%s", p.birthDate == null ? "????" : FamilyTree.YEAR_FORMAT.format(p.birthDate),
@@ -158,6 +198,10 @@ public class TreeGraph extends JPanel {
                 direction, false));
     }
 
+    /**
+     * @return The Node associated with the given Person if
+     *         it exists, otherwise null.
+     */
     private Node getNode(Person p) {
         for(Node node : nodes) {
             if(node.person == p) {
@@ -230,6 +274,9 @@ public class TreeGraph extends JPanel {
             g.setColor(Color.BLACK);
         }
 
+        /**
+         * Draws lines from this node to its parents, if they exist.
+         */
         void drawLines(Graphics g) {
             if(parents[0] != null && nodes.contains(parents[0])) {
                 if(parents[0].fake) g.setColor(FAKE_COLOR);
@@ -243,6 +290,9 @@ public class TreeGraph extends JPanel {
             g.setColor(Color.BLACK);
         }
 
+        /**
+         * @return True if the node contains the given point, otherwise false.
+         */
         boolean contains(int x, int y) {
             return x >= this.x && y >= this.y && x < (this.x + width) && y < (this.y + height);
         }

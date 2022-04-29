@@ -16,6 +16,10 @@ import cs3410.project.familytree.Person;
 
 public abstract class PersonSelectDialog extends JDialog {
 
+    /**
+     * Creates a dialog with a list of existing people and a button
+     * to create a new person.
+     */
     public PersonSelectDialog() {
         setTitle("Select Person");
         setResizable(false);
@@ -54,6 +58,9 @@ public abstract class PersonSelectDialog extends JDialog {
         add(scroll);
     }
 
+    /**
+     * Closes the dialog and executes a callback method with the selected Person.
+     */
     private void close(Person clicked) {
         onClose(clicked);
         PersonSelectDialog.this.dispatchEvent(new WindowEvent(PersonSelectDialog.this, WindowEvent.WINDOW_CLOSING));

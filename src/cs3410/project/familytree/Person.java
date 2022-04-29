@@ -7,14 +7,21 @@ import java.util.Set;
 import java.util.UUID;
 
 public class Person implements Comparable<Person> {
+    /**
+     * Rather than storing people by their names, they are
+     * stored by a unique ID so people with the same name
+     * do not cause collisions.
+     */
     public UUID id;
+    // These lock variables exist to prevent infinite loops when
+    // iterating over the nodes of the tree.
     public boolean writeLock = false;
     public boolean drawLock = false;
     public boolean traversalLock = false;
     public String givenName = "";
     public String familyName = "";
-    public String title = "";
-    public String suffix = "";
+    public String title = ""; // e.g. "Dr."
+    public String suffix = ""; // e.g. "Jr."
     public Date birthDate;
     public Date deathDate;
     public Person mother;
@@ -30,6 +37,10 @@ public class Person implements Comparable<Person> {
         this(UUID.randomUUID());
     }
 
+    /**
+     * Creates the contents of the ZIP entry representing this person,
+     * to be written to the disk in {@link FamilyTree#write()}.
+     */
     public void write() throws IOException {
         if(writeLock) return;
         writeLock();
@@ -53,6 +64,14 @@ public class Person implements Comparable<Person> {
         }
     }
 
+    /**
+     * @param p The Person to set as this Person's mother.
+     * 
+     * Sets the person's mother, and adds this person as a child of
+     * the mother. If <tt>p</tt> is null, removes this person's
+     * mother and, if the person has no other relations, adds
+     * it to the list of disconnected nodes.
+     */
     public void setMother(Person p) {
         if(p == null) {
             if(this.mother != null) {
@@ -70,6 +89,10 @@ public class Person implements Comparable<Person> {
         }
     }
 
+    /**
+     * @param p The Person to set as this Person's father.
+     * @see #setMother(Person)
+     */
     public void setFather(Person p) {
         if(p == null) {
             if(this.father != null) {
@@ -103,6 +126,10 @@ public class Person implements Comparable<Person> {
         Main.loadedTree.traversalLocked.push(this);
     }
 
+    /**
+     * Compares the two people by their family names,
+     * or, if those are the same, by their given names.
+     */
     @Override
     public int compareTo(Person p) {
         if(this.familyName.equalsIgnoreCase(p.familyName)) {
@@ -112,6 +139,10 @@ public class Person implements Comparable<Person> {
         }
     }
 
+    /**
+     * @return The person's full name and suffix,
+     *         excluding any elements that are not present.
+     */
     public String getName() {
         StringBuilder sb = new StringBuilder();
         if(!givenName.isEmpty()) {
@@ -132,6 +163,9 @@ public class Person implements Comparable<Person> {
         return sb.toString();
     }
 
+    /**
+     * @return The person's full name, as well as the span of their life.
+     */
     public String toString() {
         StringBuilder sb = new StringBuilder();
         if(!title.isEmpty()) {
