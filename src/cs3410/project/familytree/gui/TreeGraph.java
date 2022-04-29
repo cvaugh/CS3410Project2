@@ -49,7 +49,7 @@ public class TreeGraph extends JPanel {
         g.clearRect(0, 0, getWidth(), getHeight());
         if(Main.loadedTree == null) return;
         maxDepth = -1;
-        createNodesRecursive(g, active, 0, getHeight() - getHeight() / 5, 0, 0);
+        createNodesRecursive(g, active, getHeight() - getHeight() / 5, 0, 0);
         Main.loadedTree.drawUnlockAll();
         drawNodes(g);
     }
@@ -74,10 +74,10 @@ public class TreeGraph extends JPanel {
             for(Node n : nodes) {
                 if(n.depth == maxDepth + 1) continue;
                 if(n.parents[0] == null) {
-                    toAdd.add(getNullParent(g, n, false, n.depth, n.x, n.y));
+                    toAdd.add(getNullParent(g, n, false, n.depth, n.y));
                 }
                 if(n.parents[1] == null) {
-                    toAdd.add(getNullParent(g, n, true, n.depth, n.x, n.y));
+                    toAdd.add(getNullParent(g, n, true, n.depth, n.y));
                 }
             }
             nodes.addAll(toAdd);
@@ -127,33 +127,32 @@ public class TreeGraph extends JPanel {
         }
     }
 
-    private void createNodesRecursive(Graphics g, Person p, int x, int y, int depth, int direction) {
+    private void createNodesRecursive(Graphics g, Person p, int y, int depth, int direction) {
         if(p == null || p.drawLock) return;
         if(depth > maxDepth) maxDepth = depth;
         p.drawLock();
-        createNode(g, p, x, y, depth, direction);
+        createNode(g, p, y, depth, direction);
         if(p.mother != null) {
-            createNodesRecursive(g, p.mother, x - depth, y - 50, depth + 1, direction - 1);
+            createNodesRecursive(g, p.mother, y - 50, depth + 1, direction - 1);
         }
         if(p.father != null) {
-            createNodesRecursive(g, p.father, x + depth, y - 50, depth + 1, direction + 1);
+            createNodesRecursive(g, p.father, y - 50, depth + 1, direction + 1);
         }
     }
 
-    private Node getNullParent(Graphics g, Node child, boolean right, int depth, int x, int y) {
-        Node parent = new Node(null, "Unknown", "", false, false, depth + 1, x + (right ? 1 : -1), y - 50,
-                g.getFontMetrics().stringWidth("Unknown") + 10, 20, child.depth + (right ? depth + 1 : -depth - 1),
-                true);
+    private Node getNullParent(Graphics g, Node child, boolean right, int depth, int y) {
+        Node parent = new Node(null, "Unknown", "", false, false, depth + 1, y - 50,
+                g.getFontMetrics().stringWidth("Unknown") + 10, 20, child.depth + (right ? 1 : -1), true);
         child.parents[right ? 1 : 0] = parent;
         return parent;
     }
 
-    private void createNode(Graphics g, Person p, int x, int y, int depth, int direction) {
+    private void createNode(Graphics g, Person p, int y, int depth, int direction) {
         String name = p.getName();
         String dates = String.format("%s-%s", p.birthDate == null ? "????" : FamilyTree.YEAR_FORMAT.format(p.birthDate),
                 p.deathDate == null ? "" : FamilyTree.YEAR_FORMAT.format(p.deathDate));
         int w = Math.max(g.getFontMetrics().stringWidth(name), g.getFontMetrics().stringWidth(dates));
-        nodes.add(new Node(p, name, dates, p == active, Main.loadedTree.orphans.contains(p), depth, x, y, w + 10, 40,
+        nodes.add(new Node(p, name, dates, p == active, Main.loadedTree.orphans.contains(p), depth, y, w + 10, 40,
                 direction, false));
     }
 
@@ -187,15 +186,14 @@ public class TreeGraph extends JPanel {
         int rights = 0;
         boolean fake;
 
-        Node(Person person, String name, String dates, boolean active, boolean orphaned, int depth, int x, int y,
-                int width, int height, int direction, boolean fake) {
+        Node(Person person, String name, String dates, boolean active, boolean orphaned, int depth, int y, int width,
+                int height, int direction, boolean fake) {
             this.person = person;
             this.name = name;
             this.dates = dates;
             this.active = active;
             this.orphaned = orphaned;
             this.depth = depth;
-            this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;

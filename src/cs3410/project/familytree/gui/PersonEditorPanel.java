@@ -209,7 +209,6 @@ public class PersonEditorPanel extends JPanel {
                     }
                 }
             }
-
         });
         JScrollPane childrenScroll = new JScrollPane(children);
         childrenScroll.setPreferredSize(new Dimension(370, 150));
